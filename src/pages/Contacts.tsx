@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -21,6 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -117,12 +124,18 @@ const Contacts: React.FC = () => {
   const [isSelectAll, setIsSelectAll] = useState(false);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>(contacts);
   const [date, setDate] = useState<Date | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage);
   
-  // Apply filters whenever they change
+  const paginatedContacts = filteredContacts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
   useEffect(() => {
     let filtered = [...contacts];
     
-    // Filter by search
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(contact => 
@@ -132,12 +145,10 @@ const Contacts: React.FC = () => {
       );
     }
     
-    // Filter by channel
     if (filters.channelId) {
       filtered = filtered.filter(contact => contact.channelId === filters.channelId);
     }
     
-    // Filter by date range
     if (filters.dateRange[0]) {
       const startDate = filters.dateRange[0];
       startDate.setHours(0, 0, 0, 0);
@@ -150,19 +161,16 @@ const Contacts: React.FC = () => {
       filtered = filtered.filter(contact => new Date(contact.timestamp) <= endDate);
     }
     
-    // Sort by timestamp (newest first)
     filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     
     setFilteredContacts(filtered);
     
-    // Reset selection when filters change
     setSelectedContacts([]);
     setIsSelectAll(false);
   }, [filters, contacts]);
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Filters are already applied via useEffect
     toast.success("Filters applied");
   };
   
@@ -194,7 +202,6 @@ const Contacts: React.FC = () => {
   };
   
   const exportCSV = () => {
-    // In a real app, this would call the API endpoint
     toast.success(`Exported ${selectedContacts.length || filteredContacts.length} contacts as CSV`);
   };
 
@@ -325,46 +332,79 @@ const Contacts: React.FC = () => {
           </CardHeader>
           <CardContent>
             {filteredContacts.length > 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={isSelectAll}
-                          onCheckedChange={handleSelectAll}
-                          aria-label="Select all"
-                        />
-                      </TableHead>
-                      <TableHead>Phone Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Channel</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Message</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredContacts.map((contact) => (
-                      <TableRow key={contact.id}>
-                        <TableCell>
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
                           <Checkbox
-                            checked={selectedContacts.includes(contact.id)}
-                            onCheckedChange={() => handleSelectContact(contact.id)}
-                            aria-label={`Select contact ${contact.phoneNumber}`}
+                            checked={isSelectAll}
+                            onCheckedChange={handleSelectAll}
+                            aria-label="Select all"
                           />
-                        </TableCell>
-                        <TableCell className="font-medium">{contact.phoneNumber}</TableCell>
-                        <TableCell>{contact.username || "Unknown"}</TableCell>
-                        <TableCell>{contact.channelName}</TableCell>
-                        <TableCell>{new Date(contact.timestamp).toLocaleString()}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {contact.message || "No message"}
-                        </TableCell>
+                        </TableHead>
+                        <TableHead>Phone Number</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Channel</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Message</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedContacts.map((contact) => (
+                        <TableRow key={contact.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedContacts.includes(contact.id)}
+                              onCheckedChange={() => handleSelectContact(contact.id)}
+                              aria-label={`Select contact ${contact.phoneNumber}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{contact.phoneNumber}</TableCell>
+                          <TableCell>{contact.username || "Unknown"}</TableCell>
+                          <TableCell>{contact.channelName}</TableCell>
+                          <TableCell>{new Date(contact.timestamp).toLocaleString()}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {contact.message || "No message"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="mt-4">
+                    <Pagination>
+                      <PaginationContent>
+                        {currentPage > 1 && (
+                          <PaginationItem>
+                            <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                          </PaginationItem>
+                        )}
+                        
+                        {Array.from({ length: totalPages }).map((_, index) => (
+                          <PaginationItem key={index}>
+                            <PaginationLink
+                              isActive={currentPage === index + 1}
+                              onClick={() => handlePageChange(index + 1)}
+                            >
+                              {index + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        {currentPage < totalPages && (
+                          <PaginationItem>
+                            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                          </PaginationItem>
+                        )}
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="py-12 text-center">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
