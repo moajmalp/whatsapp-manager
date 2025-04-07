@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MessageSquare, AlertCircle, CheckCircle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import DashboardIllustration from "@/components/DashboardIllustration";
 
 const Dashboard = () => {
   // Mock data for dashboard stats
@@ -46,6 +47,9 @@ const Dashboard = () => {
             Overview of your WhatsApp channel management system
           </p>
         </div>
+
+        {/* Dashboard Illustration */}
+        <DashboardIllustration />
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
