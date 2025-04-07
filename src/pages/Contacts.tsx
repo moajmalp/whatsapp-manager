@@ -132,42 +132,10 @@ const Contacts: React.FC = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
-  useEffect(() => {
-    let filtered = [...contacts];
-    
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(contact => 
-        contact.phoneNumber.toLowerCase().includes(searchLower) ||
-        (contact.username && contact.username.toLowerCase().includes(searchLower)) ||
-        contact.channelName.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    if (filters.channelId) {
-      filtered = filtered.filter(contact => contact.channelId === filters.channelId);
-    }
-    
-    if (filters.dateRange[0]) {
-      const startDate = filters.dateRange[0];
-      startDate.setHours(0, 0, 0, 0);
-      filtered = filtered.filter(contact => new Date(contact.timestamp) >= startDate);
-    }
-    
-    if (filters.dateRange[1]) {
-      const endDate = filters.dateRange[1];
-      endDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(contact => new Date(contact.timestamp) <= endDate);
-    }
-    
-    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    
-    setFilteredContacts(filtered);
-    
-    setSelectedContacts([]);
-    setIsSelectAll(false);
-  }, [filters, contacts]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
