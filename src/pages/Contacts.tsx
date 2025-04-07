@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -221,14 +222,14 @@ const Contacts: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="channel">Channel</Label>
                   <Select
-                    value={filters.channelId || ""}
-                    onValueChange={(value) => setFilters({ ...filters, channelId: value || null })}
+                    value={filters.channelId || "all"}
+                    onValueChange={(value) => setFilters({ ...filters, channelId: value === "all" ? null : value })}
                   >
                     <SelectTrigger id="channel">
                       <SelectValue placeholder="All channels" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All channels</SelectItem>
+                      <SelectItem value="all">All channels</SelectItem>
                       {channels.map((channel) => (
                         <SelectItem key={channel.id} value={channel.id}>
                           {channel.name}
@@ -267,6 +268,7 @@ const Contacts: React.FC = () => {
                           }
                         }}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -399,3 +401,4 @@ const Contacts: React.FC = () => {
 };
 
 export default Contacts;
+
