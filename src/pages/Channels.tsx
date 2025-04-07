@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,8 @@ import { Plus, MoreVertical, Edit, Trash2, QrCode, RefreshCw, Check, Smartphone 
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Channel, ChannelFormData } from "@/types";
+import WhatsAppQRCode from "@/components/WhatsAppQRCode";
+import { useWhatsAppSocket, WhatsAppSession } from "@/hooks/useWhatsAppSocket";
 
 const Channels: React.FC = () => {
   const navigate = useNavigate();
@@ -82,6 +84,42 @@ const Channels: React.FC = () => {
   const [currentQRChannel, setCurrentQRChannel] = useState<Channel | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
+  // WhatsApp socket integration
+  const { 
+    qrCode, 
+    session, 
+    isLoading,
+    connect,
+    refreshQrCode
+  } = useWhatsAppSocket({
+    channelId: currentQRChannel?.id,
+    autoConnect: false,
+    onReady: (sessionInfo) => {
+      handleSessionReady(sessionInfo);
+    }
+  });
+  
+  const handleSessionReady = (sessionInfo: WhatsAppSession) => {
+    // Update the channel with the session info
+    if (!currentQRChannel) return;
+    
+    const updatedChannels = channels.map(channel => 
+      channel.id === currentQRChannel.id 
+        ? { 
+            ...channel, 
+            status: "active" as const,
+            phoneNumber: sessionInfo.phoneNumber || channel.phoneNumber,
+            lastActive: new Date().toISOString() 
+          }
+        : channel
+    );
+    
+    setChannels(updatedChannels);
+    toast.success("WhatsApp connected successfully");
+    setShowQRDialog(false);
+    setCurrentQRChannel(null);
+  };
+  
   const handleAddChannel = () => {
     setIsSubmitting(true);
     
@@ -104,6 +142,9 @@ const Channels: React.FC = () => {
       // Automatically show QR code for scanning
       setCurrentQRChannel(createdChannel);
       setShowQRDialog(true);
+      
+      // Connect to WhatsApp
+      connect(createdChannel.id);
     }, 800);
   };
   
@@ -141,25 +182,10 @@ const Channels: React.FC = () => {
     if (channel) {
       setCurrentQRChannel(channel);
       setShowQRDialog(true);
-    }
-  };
-  
-  const completeQRScan = () => {
-    if (!currentQRChannel) return;
-    
-    // Simulate successful QR scan
-    setTimeout(() => {
-      const updatedChannels = channels.map(channel => 
-        channel.id === currentQRChannel.id 
-          ? { ...channel, status: "active" as const, lastActive: new Date().toISOString() }
-          : channel
-      );
       
-      setChannels(updatedChannels);
-      setShowQRDialog(false);
-      setCurrentQRChannel(null);
-      toast.success("QR code scanned successfully");
-    }, 1000);
+      // Connect to WhatsApp
+      connect(channelId);
+    }
   };
 
   return (
@@ -401,6 +427,7 @@ const Channels: React.FC = () => {
           </Card>
         )}
         
+        {/* WhatsApp QR Code Dialog */}
         <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -410,27 +437,11 @@ const Channels: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center py-4">
-              <div className="relative border border-input p-4 rounded-lg bg-muted/50 w-64 h-64 flex items-center justify-center">
-                {/* Placeholder for actual QR code */}
-                <div className="w-full h-full bg-white p-4 relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-48 h-48 border-4 border-black relative">
-                      {/* QR Code corners */}
-                      <div className="absolute -top-2 -left-2 w-6 h-6 border-l-4 border-t-4 border-black"></div>
-                      <div className="absolute -top-2 -right-2 w-6 h-6 border-r-4 border-t-4 border-black"></div>
-                      <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-4 border-b-4 border-black"></div>
-                      <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-4 border-b-4 border-black"></div>
-                      
-                      {/* Center square */}
-                      <div className="absolute inset-0 m-auto w-16 h-16 bg-black"></div>
-                      <div className="absolute inset-0 m-auto w-10 h-10 bg-white"></div>
-                      <div className="absolute inset-0 m-auto w-6 h-6 bg-black"></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <RefreshCw className="absolute bottom-2 right-2 h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer" />
-              </div>
+              <WhatsAppQRCode 
+                qrCode={qrCode} 
+                onRefresh={refreshQrCode}
+                isLoading={isLoading} 
+              />
               <p className="text-sm text-muted-foreground mt-4">
                 Scanning will connect <strong>{currentQRChannel?.name}</strong> to WhatsApp Web
               </p>
@@ -445,7 +456,21 @@ const Channels: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button className="gap-1" onClick={completeQRScan}>
+              <Button 
+                className="gap-1" 
+                onClick={() => {
+                  // This simulates a successful scan for demo purposes
+                  // In production, the socket would notify us when the QR is scanned
+                  if (currentQRChannel) {
+                    handleSessionReady({
+                      id: currentQRChannel.id,
+                      phoneNumber: currentQRChannel.phoneNumber,
+                      status: 'active',
+                      lastActive: new Date().toISOString()
+                    });
+                  }
+                }}
+              >
                 <Check className="h-4 w-4" />
                 <span>I've Scanned the Code</span>
               </Button>

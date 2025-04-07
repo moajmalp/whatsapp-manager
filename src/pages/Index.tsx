@@ -6,8 +6,8 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to login instead of directly to dashboard
-    navigate("/login");
+    // Redirect to channels page for our demo
+    navigate("/channels");
   }, [navigate]);
 
   return null;
