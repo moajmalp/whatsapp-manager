@@ -2,6 +2,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { socketService, WhatsAppSession, WhatsAppContact } from "@/services/socket";
 
+// Re-export the WhatsAppSession type
+export type { WhatsAppSession } from "@/services/socket";
+
 interface UseWhatsAppSocketProps {
   channelId?: string;
   onQrCode?: (qrCode: string) => void;
