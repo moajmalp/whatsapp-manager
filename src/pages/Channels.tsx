@@ -1,45 +1,18 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Plus, MoreVertical, Edit, Trash2, QrCode, RefreshCw, Check, Smartphone } from "lucide-react";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { Channel, ChannelFormData } from "@/types";
-import WhatsAppQRCode from "@/components/WhatsAppQRCode";
 import { useWhatsAppSocket, WhatsAppSession } from "@/hooks/useWhatsAppSocket";
+import ChannelCard from "@/components/ChannelCard";
+import ChannelForm from "@/components/ChannelForm";
+import QRCodeDialog from "@/components/QRCodeDialog";
+import EmptyChannelState from "@/components/EmptyChannelState";
 
 const Channels: React.FC = () => {
-  const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([
     {
       id: "1",
@@ -83,6 +56,8 @@ const Channels: React.FC = () => {
   const [showQRDialog, setShowQRDialog] = useState<boolean>(false);
   const [currentQRChannel, setCurrentQRChannel] = useState<Channel | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [showAddDialog, setShowAddDialog] = useState<boolean>(false);
+  const [showEditDialog, setShowEditDialog] = useState<boolean>(false);
   
   // WhatsApp socket integration
   const { 
@@ -98,6 +73,11 @@ const Channels: React.FC = () => {
       handleSessionReady(sessionInfo);
     }
   });
+  
+  const handleOpenAddDialog = () => {
+    setNewChannel({ name: "", phoneNumber: "" });
+    setShowAddDialog(true);
+  };
   
   const handleSessionReady = (sessionInfo: WhatsAppSession) => {
     // Update the channel with the session info
@@ -137,6 +117,7 @@ const Channels: React.FC = () => {
       setChannels([...channels, createdChannel]);
       setNewChannel({ name: "", phoneNumber: "" });
       setIsSubmitting(false);
+      setShowAddDialog(false);
       toast.success("Channel created successfully");
       
       // Automatically show QR code for scanning
@@ -164,6 +145,7 @@ const Channels: React.FC = () => {
       setChannels(updatedChannels);
       setEditChannel(null);
       setIsSubmitting(false);
+      setShowEditDialog(false);
       toast.success("Channel updated successfully");
     }, 800);
   };
@@ -187,6 +169,11 @@ const Channels: React.FC = () => {
       connect(channelId);
     }
   };
+  
+  const handleEditChannel = (channel: Channel) => {
+    setEditChannel(channel);
+    setShowEditDialog(true);
+  };
 
   return (
     <DashboardLayout>
@@ -199,284 +186,77 @@ const Channels: React.FC = () => {
             </p>
           </div>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-1">
-                <Plus className="h-4 w-4" />
-                <span>Add Channel</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Channel</DialogTitle>
-                <DialogDescription>
-                  Create a new WhatsApp Web channel to track contacts
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Channel Name</Label>
-                  <Input 
-                    id="name"
-                    placeholder="e.g. Sales Team" 
-                    value={newChannel.name}
-                    onChange={(e) => setNewChannel({...newChannel, name: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone"
-                    placeholder="e.g. +1234567890" 
-                    value={newChannel.phoneNumber}
-                    onChange={(e) => setNewChannel({...newChannel, phoneNumber: e.target.value})}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    This should be the phone number associated with the WhatsApp account
-                  </p>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setNewChannel({ name: "", phoneNumber: "" })}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleAddChannel}
-                  disabled={!newChannel.name || !newChannel.phoneNumber || isSubmitting}
-                >
-                  {isSubmitting ? "Creating..." : "Create Channel"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button className="flex items-center gap-1" onClick={handleOpenAddDialog}>
+            <Plus className="h-4 w-4" />
+            <span>Add Channel</span>
+          </Button>
         </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {channels.map((channel) => (
-            <Card key={channel.id} className="transition-all hover:shadow-md">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">{channel.name}</CardTitle>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                        <span className="sr-only">More options</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Edit Channel</DialogTitle>
-                            <DialogDescription>
-                              Make changes to the WhatsApp channel
-                            </DialogDescription>
-                          </DialogHeader>
-                          
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-name">Channel Name</Label>
-                              <Input 
-                                id="edit-name"
-                                placeholder="e.g. Sales Team" 
-                                value={editChannel?.name || channel.name}
-                                onChange={(e) => setEditChannel({
-                                  ...channel,
-                                  name: e.target.value
-                                })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-phone">Phone Number</Label>
-                              <Input 
-                                id="edit-phone"
-                                placeholder="e.g. +1234567890" 
-                                value={editChannel?.phoneNumber || channel.phoneNumber}
-                                onChange={(e) => setEditChannel({
-                                  ...channel,
-                                  phoneNumber: e.target.value
-                                })}
-                              />
-                            </div>
-                          </div>
-                          
-                          <DialogFooter>
-                            <Button
-                              variant="outline"
-                              onClick={() => setEditChannel(null)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              onClick={handleUpdateChannel}
-                              disabled={isSubmitting}
-                            >
-                              {isSubmitting ? "Saving..." : "Save Changes"}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                      
-                      <DropdownMenuItem 
-                        onSelect={(e) => {
-                          e.preventDefault();
-                          handleQRScan(channel.id);
-                        }}
-                      >
-                        <QrCode className="h-4 w-4 mr-2" />
-                        {channel.status === "connecting" ? "Scan QR Code" : "Reconnect"}
-                      </DropdownMenuItem>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onSelect={(e) => e.preventDefault()}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Channel?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete the "{channel.name}" channel and all its data. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => handleDeleteChannel(channel.id)}
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardDescription>
-                  {channel.phoneNumber}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <span>Status:</span>
-                  <div className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full ${
-                      channel.status === "active" ? "bg-emerald-500" : "bg-amber-500"
-                    }`} />
-                    <span className="capitalize">{channel.status}</span>
-                  </div>
-                </div>
-                {channel.lastActive && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Last active: {new Date(channel.lastActive).toLocaleString()}
-                  </p>
-                )}
-              </CardContent>
-              <CardFooter className="pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => navigate("/contacts", { state: { channelId: channel.id } })}
-                >
-                  View Contacts
-                </Button>
-              </CardFooter>
-            </Card>
+            <ChannelCard
+              key={channel.id}
+              channel={channel}
+              onDelete={handleDeleteChannel}
+              onEdit={handleEditChannel}
+              onQrScan={handleQRScan}
+            />
           ))}
         </div>
         
         {channels.length === 0 && (
-          <Card className="border-dashed">
-            <CardContent className="py-10 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                <Plus className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">No channels yet</h3>
-              <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                Add your first WhatsApp channel to start tracking contacts
-              </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>Add Channel</Button>
-                </DialogTrigger>
-                <DialogContent>{/* Same content as above */}</DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
+          <EmptyChannelState onClick={handleOpenAddDialog} />
         )}
         
-        {/* WhatsApp QR Code Dialog */}
-        <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Scan WhatsApp QR Code</DialogTitle>
-              <DialogDescription>
-                Open WhatsApp on your phone, tap Menu or Settings and select WhatsApp Web
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col items-center py-4">
-              <WhatsAppQRCode 
-                qrCode={qrCode} 
-                onRefresh={refreshQrCode}
-                isLoading={isLoading} 
-              />
-              <p className="text-sm text-muted-foreground mt-4">
-                Scanning will connect <strong>{currentQRChannel?.name}</strong> to WhatsApp Web
-              </p>
-            </div>
-            <DialogFooter className="sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowQRDialog(false);
-                  setCurrentQRChannel(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                className="gap-1" 
-                onClick={() => {
-                  // This simulates a successful scan for demo purposes
-                  // In production, the socket would notify us when the QR is scanned
-                  if (currentQRChannel) {
-                    handleSessionReady({
-                      id: currentQRChannel.id,
-                      phoneNumber: currentQRChannel.phoneNumber,
-                      status: 'active',
-                      lastActive: new Date().toISOString()
-                    });
-                  }
-                }}
-              >
-                <Check className="h-4 w-4" />
-                <span>I've Scanned the Code</span>
-              </Button>
-            </DialogFooter>
-          </DialogContent>
+        {/* Add Channel Dialog */}
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <ChannelForm
+            mode="add"
+            data={newChannel}
+            isSubmitting={isSubmitting}
+            onCancel={() => setShowAddDialog(false)}
+            onSubmit={handleAddChannel}
+            onChange={(data) => setNewChannel(data as ChannelFormData)}
+          />
         </Dialog>
+        
+        {/* Edit Channel Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          {editChannel && (
+            <ChannelForm
+              mode="edit"
+              data={editChannel}
+              isSubmitting={isSubmitting}
+              onCancel={() => {
+                setShowEditDialog(false);
+                setEditChannel(null);
+              }}
+              onSubmit={handleUpdateChannel}
+              onChange={(data) => setEditChannel(data as Channel)}
+            />
+          )}
+        </Dialog>
+        
+        {/* QR Code Dialog */}
+        <QRCodeDialog
+          isOpen={showQRDialog}
+          onOpenChange={setShowQRDialog}
+          channel={currentQRChannel}
+          qrCode={qrCode}
+          isLoading={isLoading}
+          onRefreshQR={refreshQrCode}
+          onManualSuccess={() => {
+            // This simulates a successful scan for demo purposes
+            if (currentQRChannel) {
+              handleSessionReady({
+                id: currentQRChannel.id,
+                phoneNumber: currentQRChannel.phoneNumber,
+                status: 'active',
+                lastActive: new Date().toISOString()
+              });
+            }
+          }}
+        />
       </div>
     </DashboardLayout>
   );

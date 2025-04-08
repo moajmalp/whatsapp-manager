@@ -1,6 +1,6 @@
 
 import React from "react";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react"; // Changed from default import to named import
 import { RefreshCw } from "lucide-react";
 
 interface WhatsAppQRCodeProps {
@@ -50,12 +50,11 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
 
   return (
     <div className="relative border border-input p-4 rounded-lg bg-white w-64 h-64 flex items-center justify-center">
-      <QRCode
+      <QRCodeSVG
         value={qrCode}
         size={size}
         level="M"
         includeMargin={true}
-        renderAs="svg"
       />
       {onRefresh && (
         <RefreshCw
