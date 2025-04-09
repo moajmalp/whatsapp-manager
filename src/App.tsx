@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Channels from "./pages/Channels";
 import Contacts from "./pages/Contacts";
 import NotFound from "./pages/NotFound";
+import WhatsAppWebView from "./pages/WhatsAppWebView";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,11 @@ const App = () => (
             <Route path="/contacts" element={
               <ProtectedRoute>
                 <Contacts />
+              </ProtectedRoute>
+            } />
+            <Route path="/whatsapp-web/:channelId" element={
+              <ProtectedRoute>
+                <WhatsAppWebView />
               </ProtectedRoute>
             } />
             

@@ -46,6 +46,14 @@ const ChannelCard: React.FC<ChannelCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // Function to open WhatsApp Web in a new tab
+  const openWhatsAppWeb = (channelId: string) => {
+    // In a real implementation, this would navigate to a route that shows the WhatsApp Web interface
+    // or to an external URL with authentication for this specific channel
+    const whatsappUrl = `/whatsapp-web/${channelId}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <Card key={channel.id} className="transition-all hover:shadow-md">
       <CardHeader className="pb-2">
@@ -135,15 +143,26 @@ const ChannelCard: React.FC<ChannelCardProps> = ({
           </p>
         )}
       </CardContent>
-      <CardFooter className="pt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => navigate("/contacts", { state: { channelId: channel.id } })}
-        >
-          View Contacts
-        </Button>
+      <CardFooter className="pt-2 flex flex-col gap-2">
+        <div className="flex gap-2 w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate("/contacts", { state: { channelId: channel.id } })}
+          >
+            View Contacts
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => openWhatsAppWeb(channel.id)}
+            disabled={channel.status !== "active"}
+          >
+            WhatsApp Web
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );
